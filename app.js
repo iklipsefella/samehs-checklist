@@ -104,12 +104,21 @@
         snoozeMinutes: 10
       },
       routines: [
-        { id: uid('routine'), title: 'Review calendar and deadlines', phase: 'morning', time: '08:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check urgent email and Slack', phase: 'morning', time: '09:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Set the Now 3', phase: 'morning', time: '09:10', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear replies and follow-ups that need a decision', phase: 'day', time: '13:00', days: [1,2,3,4,5], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Review waiting-on items', phase: 'evening', time: '18:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Move, schedule, or drop every unfinished task', phase: 'night', time: '22:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
+        { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear LinkedIn', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear Fiverr', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear Briefs', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Review Gig Performance', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear LinkedIn', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear Fiverr', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Clear Briefs', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+        { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
       ],
       tasks: [],
       routineCompletions: {},
