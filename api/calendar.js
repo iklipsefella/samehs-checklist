@@ -43,9 +43,12 @@ export default async function handler(request, response) {
 
     if (!upstream.ok) return response.status(502).json({ error: `Calendar returned ${upstream.status}` });
     const contentLength = Number(upstream.headers.get('content-length') || 0);
-    if (contentLength > 2_000_000) return response.status(413).json({ error: 'Calendar feed is too large' });
+    // Cap kept under Vercel's own ~4.5MB serverless response payload ceiling, since this
+    // response echoes the full feed back to the browser. Google/Outlook feeds with many
+    // years of recurring events can run a few MB, so this is generous, not just a smoke test.
+    if (contentLength > 4_000_000) return response.status(413).json({ error: 'Calendar feed is too large (over 4MB). Try a feed scoped to fewer calendars or a shorter date range.' });
     const ics = await upstream.text();
-    if (ics.length > 2_000_000) return response.status(413).json({ error: 'Calendar feed is too large' });
+    if (ics.length > 4_000_000) return response.status(413).json({ error: 'Calendar feed is too large (over 4MB). Try a feed scoped to fewer calendars or a shorter date range.' });
     if (!ics.includes('BEGIN:VCALENDAR')) return response.status(422).json({ error: 'This URL did not return an iCal calendar' });
     response.setHeader('Cache-Control', 'private, no-store');
     return response.status(200).json({ ics });

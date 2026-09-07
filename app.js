@@ -112,30 +112,46 @@
     ];
   }
 
-  function buildSeedTasklistRoutinesV1(today) {
+  function tasklistTitles() {
     return [
-      { id: uid('routine'), title: 'Clear unreplied Fiverr messages', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review Fiverr messages from the last 24 hours', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review Fiverr briefs', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Follow up custom offers and interested leads already given rates', phase: 'day', time: '15:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review Fiverr Ads', phase: 'day', time: '14:00', days: [1], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review Fiverr gig performance and report issues', phase: 'day', time: '14:30', days: [1], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review pending Fiverr tickets, issues and conflicts', phase: 'day', time: '15:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Check imminent Fiverr deadlines, deliveries and extension needs', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review emails from the last 7 days across all addresses', phase: 'day', time: '13:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Follow up email leads', phase: 'day', time: '15:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Check Webflow form submissions and clear spam', phase: 'day', time: '16:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Remove duplicate and overlapping calendar events', phase: 'evening', time: '17:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review meeting notes and preparation for the next 7 days', phase: 'evening', time: '18:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Double-check Instagram for missed items and errors', phase: 'evening', time: '20:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Clean and unsubscribe from marketing emails', phase: 'day', time: '16:00', days: [6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Check imminent non-Fiverr deadlines, request team updates and report issues', phase: 'day', time: '14:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Update Trello tasks, report issues and remind Biker', phase: 'evening', time: '17:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Update OCA dashboard', phase: 'evening', time: '17:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Verify consulting client data, reports, meeting links, recordings and next calls are booked and sent', phase: 'evening', time: '19:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: 'Review Nabil’s EOD chat and task list', phase: 'night', time: '23:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-      { id: uid('routine'), title: '1-hour Learning', phase: 'night', time: '21:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
+      'Clear unreplied Fiverr messages',
+      'Review Fiverr messages from the last 24 hours',
+      'Review Fiverr briefs',
+      'Follow up custom offers and interested leads already given rates',
+      'Review Fiverr Ads',
+      'Review Fiverr gig performance and report issues',
+      'Review pending Fiverr tickets, issues and conflicts',
+      'Check imminent Fiverr deadlines, deliveries and extension needs',
+      'Review emails from the last 7 days across all addresses',
+      'Follow up email leads',
+      'Check Webflow form submissions and clear spam',
+      'Remove duplicate and overlapping calendar events',
+      'Review meeting notes and preparation for the next 7 days',
+      'Double-check Instagram for missed items and errors',
+      'Clean and unsubscribe from marketing emails',
+      'Check imminent non-Fiverr deadlines, request team updates and report issues',
+      'Update Trello tasks, report issues and remind Biker',
+      'Update OCA dashboard',
+      'Verify consulting client data, reports, meeting links, recordings and next calls are booked and sent',
+      'Review Nabil’s EOD chat and task list',
+      '1-hour Learning'
     ];
+  }
+
+  function buildSeedTasklistRoutinesV1(today) {
+    // Deprecated (kept only so old code referencing it doesn't break): superseded by V2 below,
+    // which puts every item in both Morning and Night, all daily, per Sameh's explicit correction.
+    return buildSeedTasklistRoutinesV2(today);
+  }
+
+  function buildSeedTasklistRoutinesV2(today) {
+    const everyDay = [0,1,2,3,4,5,6];
+    const out = [];
+    tasklistTitles().forEach(title => {
+      out.push({ id: uid('routine'), title, phase: 'morning', time: '12:00', days: everyDay, reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() });
+      out.push({ id: uid('routine'), title, phase: 'night', time: '23:40', days: everyDay, reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() });
+    });
+    return out;
   }
 
   function buildSeedTasklistTasksV1() {
@@ -157,9 +173,9 @@
         notificationsEnabled: false,
         snoozeMinutes: 10
       },
-      routines: [...buildSeedRoutinesV1(today), ...buildSeedTasklistRoutinesV1(today)],
+      routines: [...buildSeedRoutinesV1(today), ...buildSeedTasklistRoutinesV2(today)],
       tasks: buildSeedTasklistTasksV1(),
-      seedFlags: { routinesV1: true, tasklistV1: true },
+      seedFlags: { routinesV1: true, tasklistV1: true, tasklistV2: true },
       routineCompletions: {},
       priorities: {},
       calendarEvents: [],
@@ -197,6 +213,21 @@
         if (!existingTaskTitles.has(t.title)) { st.tasks.push(t); existingTaskTitles.add(t.title); }
       });
       st.seedFlags.tasklistV1 = true;
+      changed = true;
+    }
+    if (!st.seedFlags.tasklistV2) {
+      // Correction: the task-list items belong in BOTH Morning and Night (like the core
+      // routine set), all daily — not scattered across day/evening at different times.
+      // Strip any old wrongly-phased tasklist entries, then insert the corrected pairs.
+      const titleSet = new Set(tasklistTitles());
+      st.routines = st.routines.filter(r => !(titleSet.has(r.title) && r.phase !== 'morning' && r.phase !== 'night'));
+      const seedRoutines = buildSeedTasklistRoutinesV2(today);
+      const existingKeys = new Set(st.routines.map(r => `${r.title}|${r.phase}|${r.time}`));
+      seedRoutines.forEach(r => {
+        const key = `${r.title}|${r.phase}|${r.time}`;
+        if (!existingKeys.has(key)) { st.routines.push(r); existingKeys.add(key); }
+      });
+      st.seedFlags.tasklistV2 = true;
       changed = true;
     }
     return changed;
