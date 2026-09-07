@@ -48,6 +48,9 @@ a{color:inherit;text-decoration:none}
 .quiet-button:hover{color:var(--ink)}
 .local-note{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 0 4px rgba(79,174,124,.15)}
+.status-dot.is-offline{background:var(--faint);box-shadow:0 0 0 4px rgba(110,106,98,.15)}
+.status-dot.is-syncing{background:var(--warning);box-shadow:0 0 0 4px rgba(215,154,76,.15)}
+.status-dot.is-error{background:var(--warning);box-shadow:0 0 0 4px rgba(215,154,76,.15)}
 
 .main-area{grid-column:2;padding:32px clamp(24px,4vw,64px) 120px;max-width:1260px;width:100%;margin:0 auto}
 .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:46px}

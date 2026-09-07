@@ -301,6 +301,42 @@
 
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+  // Small visible signal (sidebar footer) so it's obvious at a glance whether a device is
+  // actually on cloud sync or has silently fallen back to local-only. States:
+  //   'offline'   — cloud sync unavailable this session, saved to this device only
+  //   'connecting'— talking to Supabase for the first time / initial migration in flight
+  //   'synced'    — connected, realtime subscription live
+  //   'syncing'   — a local change is being pushed up right now
+  //   'error'     — cloud sync is on but the last push/pull failed; local save still succeeded
+  function setSyncStatusUI(status) {
+    const dot = document.getElementById('syncStatusDot');
+    const text = document.getElementById('syncStatusText');
+    if (!dot || !text) return;
+    dot.classList.remove('is-offline', 'is-syncing', 'is-error');
+    switch (status) {
+      case 'connecting':
+        dot.classList.add('is-syncing');
+        text.textContent = 'Connecting to cloud…';
+        break;
+      case 'syncing':
+        dot.classList.add('is-syncing');
+        text.textContent = 'Syncing…';
+        break;
+      case 'synced':
+        text.textContent = 'Synced to all devices';
+        break;
+      case 'error':
+        dot.classList.add('is-error');
+        text.textContent = 'Sync error — saved locally';
+        break;
+      case 'offline':
+      default:
+        dot.classList.add('is-offline');
+        text.textContent = 'Saved on this device';
+        break;
+    }
+  }
+
   function getDeviceId() {
     let id;
     try { id = localStorage.getItem('samehs-checklist-device-id'); } catch { id = null; }
@@ -434,6 +470,7 @@
       cloudSyncEnabled = true;
     } catch (err) {
       cloudSyncEnabled = false;
+      setSyncStatusUI('offline');
       console.warn('[cloud sync] disabled —', err?.message || err);
     }
   }
@@ -507,6 +544,7 @@
     const deletedRoutineIds = [...lastSyncedRoutineIds].filter(id => !currentRoutineIds.has(id));
     const deletedCompletionKeys = [...lastSyncedCompletionKeys].filter(key => !currentCompletionKeys.has(key));
 
+    setSyncStatusUI('syncing');
     try {
       if (taskRows.length) { const { error } = await db.from('tasks').upsert(taskRows, { onConflict: 'id' }); if (error) throw error; }
       if (routineRows.length) { const { error } = await db.from('routines').upsert(routineRows, { onConflict: 'id' }); if (error) throw error; }
@@ -530,7 +568,9 @@
       lastSyncedTaskIds = currentTaskIds;
       lastSyncedRoutineIds = currentRoutineIds;
       lastSyncedCompletionKeys = currentCompletionKeys;
+      setSyncStatusUI('synced');
     } catch (err) {
+      setSyncStatusUI('error');
       console.warn('[cloud sync] push failed:', err?.message || err);
     }
   }
@@ -543,6 +583,7 @@
 
   async function loadInitialData() {
     if (!cloudSyncEnabled || !db) return;
+    setSyncStatusUI('connecting');
     try {
       const snapshot = await fetchCloudSnapshot();
       const migrationRow = snapshot.settings.find(s => s.key === 'migration_v1');
@@ -566,7 +607,9 @@
         saveState();
       }
       cloudReady = true;
+      setSyncStatusUI('synced');
     } catch (err) {
+      setSyncStatusUI('error');
       console.warn('[cloud sync] initial load failed, staying local-only for this session:', err?.message || err);
     }
   }
@@ -575,8 +618,14 @@
     if (applyingRemoteUpdate) return;
     clearTimeout(remoteRefreshTimer);
     remoteRefreshTimer = setTimeout(async () => {
-      try { applyCloudSnapshotToState(await fetchCloudSnapshot()); }
-      catch (err) { console.warn('[cloud sync] realtime refresh failed:', err?.message || err); }
+      try {
+        applyCloudSnapshotToState(await fetchCloudSnapshot());
+        setSyncStatusUI('synced');
+      }
+      catch (err) {
+        setSyncStatusUI('error');
+        console.warn('[cloud sync] realtime refresh failed:', err?.message || err);
+      }
     }, 400);
   }
 
@@ -591,6 +640,7 @@
   }
 
   async function initCloudSync() {
+    setSyncStatusUI('connecting');
     await initDataLayer();
     if (!cloudSyncEnabled) return;
     await loadInitialData();
