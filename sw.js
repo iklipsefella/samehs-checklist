@@ -1,4 +1,4 @@
-const CACHE = 'samehs-checklist-v3';
+const CACHE = 'samehs-checklist-v4';
 const SHELL = [
   '/',
   '/index.html',
@@ -36,6 +36,24 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  // Network-first for same-origin app shell files so a new deploy is picked up
+  // immediately when online, with the cache only as an offline fallback.
+  const isShellAsset = url.origin === self.location.origin && SHELL.includes(url.pathname);
+  if (isShellAsset) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
