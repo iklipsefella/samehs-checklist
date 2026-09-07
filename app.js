@@ -92,6 +92,60 @@
     return new Date(y, m - 1, d, hh, mm || 0, 0, 0);
   }
 
+  function buildSeedRoutinesV1(today) {
+    return [
+      { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear LinkedIn', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear Fiverr', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear Briefs', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Gig Performance', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear LinkedIn', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear Fiverr', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clear Briefs', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
+    ];
+  }
+
+  function buildSeedTasklistRoutinesV1(today) {
+    return [
+      { id: uid('routine'), title: 'Clear unreplied Fiverr messages', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Fiverr messages from the last 24 hours', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Fiverr briefs', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Follow up custom offers and interested leads already given rates', phase: 'day', time: '15:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Fiverr Ads', phase: 'day', time: '14:00', days: [1], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Fiverr gig performance and report issues', phase: 'day', time: '14:30', days: [1], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review pending Fiverr tickets, issues and conflicts', phase: 'day', time: '15:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check imminent Fiverr deadlines, deliveries and extension needs', phase: 'day', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review emails from the last 7 days across all addresses', phase: 'day', time: '13:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Follow up email leads', phase: 'day', time: '15:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check Webflow form submissions and clear spam', phase: 'day', time: '16:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Remove duplicate and overlapping calendar events', phase: 'evening', time: '17:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review meeting notes and preparation for the next 7 days', phase: 'evening', time: '18:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Double-check Instagram for missed items and errors', phase: 'evening', time: '20:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Clean and unsubscribe from marketing emails', phase: 'day', time: '16:00', days: [6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Check imminent non-Fiverr deadlines, request team updates and report issues', phase: 'day', time: '14:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Update Trello tasks, report issues and remind Biker', phase: 'evening', time: '17:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Update OCA dashboard', phase: 'evening', time: '17:30', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Verify consulting client data, reports, meeting links, recordings and next calls are booked and sent', phase: 'evening', time: '19:00', days: [0], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: 'Review Nabil’s EOD chat and task list', phase: 'night', time: '23:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
+      { id: uid('routine'), title: '1-hour Learning', phase: 'night', time: '21:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
+    ];
+  }
+
+  function buildSeedTasklistTasksV1() {
+    return [
+      { id: uid('task'), title: 'Accounting collection and revision', notes: '', dueDate: '2026-09-05', dueTime: '', phase: 'any', status: 'open', createdAt: new Date().toISOString(), completedAt: null, originalDueDate: '2026-09-05', rolledFrom: null, rollCount: 0, reminderMinutes: '', source: 'seed' },
+      { id: uid('task'), title: 'Accounting finalization', notes: '', dueDate: '2026-09-30', dueTime: '', phase: 'any', status: 'open', createdAt: new Date().toISOString(), completedAt: null, originalDueDate: '2026-09-30', rolledFrom: null, rollCount: 0, reminderMinutes: '', source: 'seed' },
+      { id: uid('task'), title: 'Send accounting', notes: '', dueDate: '2026-10-01', dueTime: '12:00', phase: 'any', status: 'open', createdAt: new Date().toISOString(), completedAt: null, originalDueDate: '2026-10-01', rolledFrom: null, rollCount: 0, reminderMinutes: '', source: 'seed' }
+    ];
+  }
+
   function defaultState() {
     const today = dateKey();
     return {
@@ -103,24 +157,9 @@
         notificationsEnabled: false,
         snoozeMinutes: 10
       },
-      routines: [
-        { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear LinkedIn', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear Fiverr', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear Briefs', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Review Gig Performance', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'morning', time: '12:00', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check billy@iklipseworld', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check contacts@thedigired.com', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear LinkedIn', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear Fiverr', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Clear Briefs', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Check Pending Slack Items (Expansio / OCA & iklipse)', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() },
-        { id: uid('routine'), title: 'Review Biker’s Mutual Groups', phase: 'night', time: '23:40', days: [0,1,2,3,4,5,6], reminderMinutes: '', startDate: today, active: true, createdAt: new Date().toISOString() }
-      ],
-      tasks: [],
+      routines: [...buildSeedRoutinesV1(today), ...buildSeedTasklistRoutinesV1(today)],
+      tasks: buildSeedTasklistTasksV1(),
+      seedFlags: { routinesV1: true, tasklistV1: true },
       routineCompletions: {},
       priorities: {},
       calendarEvents: [],
@@ -129,6 +168,38 @@
       notified: {},
       lastProcessedDate: today
     };
+  }
+
+  function migrateSeeds(st) {
+    st.seedFlags = st.seedFlags || {};
+    let changed = false;
+    const today = dateKey();
+    if (!st.seedFlags.routinesV1) {
+      const seed = buildSeedRoutinesV1(today);
+      const existingKeys = new Set(st.routines.map(r => `${r.title}|${r.phase}|${r.time}`));
+      seed.forEach(r => {
+        const key = `${r.title}|${r.phase}|${r.time}`;
+        if (!existingKeys.has(key)) { st.routines.push(r); existingKeys.add(key); }
+      });
+      st.seedFlags.routinesV1 = true;
+      changed = true;
+    }
+    if (!st.seedFlags.tasklistV1) {
+      const seedRoutines = buildSeedTasklistRoutinesV1(today);
+      const existingKeys = new Set(st.routines.map(r => `${r.title}|${r.phase}|${r.time}`));
+      seedRoutines.forEach(r => {
+        const key = `${r.title}|${r.phase}|${r.time}`;
+        if (!existingKeys.has(key)) { st.routines.push(r); existingKeys.add(key); }
+      });
+      const seedTasks = buildSeedTasklistTasksV1();
+      const existingTaskTitles = new Set(st.tasks.map(t => t.title));
+      seedTasks.forEach(t => {
+        if (!existingTaskTitles.has(t.title)) { st.tasks.push(t); existingTaskTitles.add(t.title); }
+      });
+      st.seedFlags.tasklistV1 = true;
+      changed = true;
+    }
+    return changed;
   }
 
   function normalizeState(raw) {
@@ -140,6 +211,7 @@
       settings: { ...base.settings, ...(raw.settings || {}) },
       routines: Array.isArray(raw.routines) ? raw.routines : base.routines,
       tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+      seedFlags: raw.seedFlags || {},
       routineCompletions: raw.routineCompletions || {},
       priorities: raw.priorities || {},
       calendarEvents: Array.isArray(raw.calendarEvents) ? raw.calendarEvents : [],
@@ -151,6 +223,9 @@
   let state;
   try { state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY))); }
   catch { state = defaultState(); }
+  if (migrateSeeds(state)) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  }
 
   const ui = {
     activeView: 'today',
