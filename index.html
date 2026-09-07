@@ -85,8 +85,8 @@
         <section class="section-block" id="currentRoutineSection">
           <div class="section-heading compact">
             <div>
-              <span class="eyebrow" id="routinePhaseEyebrow">Morning routine</span>
-              <h2 id="routinePhaseTitle">Start clean.</h2>
+              <span class="eyebrow" id="routinePhaseEyebrow">Today's routine</span>
+              <h2 id="routinePhaseTitle">Check off anything, anytime.</h2>
             </div>
             <button class="text-button" id="manageRoutinesFromToday" type="button">Edit routine</button>
           </div>
@@ -107,14 +107,6 @@
             <strong>Nothing open.</strong>
             <span>Add a task or enjoy the quiet.</span>
           </div>
-        </section>
-
-        <section class="section-block is-collapsible" id="laterSection">
-          <button class="collapse-heading" id="laterToggle" type="button" aria-expanded="false">
-            <span><span class="eyebrow">Later today</span><strong id="laterTitle">Upcoming routines</strong></span>
-            <span class="collapse-meta"><span id="laterCount"></span><span class="chevron">⌄</span></span>
-          </button>
-          <div class="collapse-body" id="laterBody" hidden></div>
         </section>
 
         <section class="section-block is-collapsible" id="doneSection">
@@ -165,7 +157,7 @@
           <div>
             <span class="eyebrow">Auto-renewing</span>
             <h2>Your day, by time.</h2>
-            <p>Only the active part of the day appears on your main checklist.</p>
+            <p>Everything's checkable all day — group by Morning, Day, Evening, or Night just to keep it organized. An item can belong to more than one.</p>
           </div>
           <button class="primary-button" id="newRoutineButton" type="button">Add routine item</button>
         </div>
@@ -264,21 +256,19 @@
           <span>Checklist item</span>
           <textarea id="routineTitle" rows="2" placeholder="Review calendar and deadlines" required></textarea>
         </label>
-        <div class="form-grid">
-          <label class="field">
-            <span>Part of day</span>
-            <select id="routinePhase">
-              <option value="morning">Morning</option>
-              <option value="day">Day</option>
-              <option value="evening">Evening</option>
-              <option value="night">Night</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Preferred time</span>
-            <input id="routineTime" type="time">
-          </label>
-        </div>
+        <label class="field">
+          <span>Preferred time</span>
+          <input id="routineTime" type="time">
+        </label>
+        <fieldset class="days-field">
+          <legend>Part of day (pick any number)</legend>
+          <div class="phase-picker" id="routinePhasePicker">
+            <label><input type="checkbox" value="morning"><span>Morning</span></label>
+            <label><input type="checkbox" value="day"><span>Day</span></label>
+            <label><input type="checkbox" value="evening"><span>Evening</span></label>
+            <label><input type="checkbox" value="night"><span>Night</span></label>
+          </div>
+        </fieldset>
         <fieldset class="days-field">
           <legend>Repeats</legend>
           <div class="day-picker" id="dayPicker">

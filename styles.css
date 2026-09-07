@@ -250,6 +250,12 @@ a{color:inherit;text-decoration:none}
 .day-picker label{cursor:pointer}.day-picker input{position:absolute;opacity:0;pointer-events:none}
 .day-picker span{height:36px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;font-size:11px;color:var(--muted);transition:all .16s ease}
 .day-picker input:checked+span{background:var(--chip-bg);border-color:var(--chip-bg);color:var(--chip-text)}
+.phase-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.phase-picker label{cursor:pointer}.phase-picker input{position:absolute;opacity:0;pointer-events:none}
+.phase-picker span{height:36px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;font-size:11px;color:var(--muted);transition:all .16s ease}
+.phase-picker input:checked+span{background:var(--chip-bg);border-color:var(--chip-bg);color:var(--chip-text)}
+.routine-group-heading{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:14px 4px 8px}
+.routine-group-heading:first-child{padding-top:2px}
 .priority-picker{display:grid;border-top:1px solid var(--line)}
 .priority-choice{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:13px 3px;border-bottom:1px solid var(--line)}
 .priority-choice strong{font-size:13px;font-weight:540}
@@ -356,6 +362,7 @@ a{color:inherit;text-decoration:none}
   .section-heading{display:grid;grid-template-columns:1fr auto}
   .form-grid{grid-template-columns:1fr}
   .day-picker{gap:4px}.day-picker span{height:34px}
+  .phase-picker{gap:4px;grid-template-columns:repeat(2,1fr)}.phase-picker span{height:34px}
   .history-metrics{grid-template-columns:1fr 1fr}
   .closeout-stats{gap:18px}
 }

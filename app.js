@@ -12,6 +12,20 @@
     night: { label: 'Night routine', title: 'Close the day.' }
   };
 
+  // Routines can belong to more than one part of the day (e.g. "check this in the
+  // Morning list AND the Night list") — `phases` is the source of truth going forward.
+  // `phase` (singular) is kept around for older saved routines and as the value written
+  // to Supabase's typed `phase` column (which only accepts one value); this helper
+  // normalizes either shape into an array so every call site can treat routines uniformly.
+  function routinePhases(routine) {
+    if (Array.isArray(routine.phases) && routine.phases.length) {
+      const valid = routine.phases.filter(p => PHASES.includes(p));
+      if (valid.length) return valid;
+    }
+    if (routine.phase && PHASES.includes(routine.phase)) return [routine.phase];
+    return ['morning'];
+  }
+
   // Real UUIDs (not the old "prefix_timestamp_random" strings) so every id is a valid
   // Postgres `uuid` value once it syncs to Supabase. Prefix arg kept for call-site compat.
   const uid = () => {
@@ -184,7 +198,7 @@
       },
       routines: [...buildSeedRoutinesV1(today), ...buildSeedTasklistRoutinesV2(today)],
       tasks: buildSeedTasklistTasksV1(),
-      seedFlags: { routinesV1: true, tasklistV1: true, tasklistV2: true },
+      seedFlags: { routinesV1: true, tasklistV1: true, tasklistV2: true, phasesArrayV1: true },
       routineCompletions: {},
       priorities: {},
       calendarEvents: [],
@@ -237,6 +251,15 @@
         if (!existingKeys.has(key)) { st.routines.push(r); existingKeys.add(key); }
       });
       st.seedFlags.tasklistV2 = true;
+      changed = true;
+    }
+    if (!st.seedFlags.phasesArrayV1) {
+      // One-time, purely additive: give every existing routine a real `phases` array
+      // (routinePhases() already synthesizes this on the fly for reads, but persisting it
+      // means the edit form's phase checkboxes and cloud sync both see the real shape).
+      // Doesn't touch which items exist or merge any — same routines, same count.
+      st.routines.forEach(r => { if (!Array.isArray(r.phases) || !r.phases.length) r.phases = routinePhases(r); });
+      st.seedFlags.phasesArrayV1 = true;
       changed = true;
     }
     return changed;
@@ -434,7 +457,9 @@
       id: routine.id,
       title: routine.title,
       notes: routine.notes || null,
-      phase: routine.phase,
+      // Typed column only accepts one value; `phases` (plural, on `data` below) is the
+      // real source of truth for which parts of the day this routine belongs to.
+      phase: routinePhases(routine)[0],
       frequency: days.length >= 7 ? 'daily' : 'weekly',
       // Stored using JS weekday numbering (Sun=0..Sat=6) to match everything else in this
       // app. This column is supplementary only — `data` below is authoritative on read.
@@ -706,13 +731,15 @@
 
   function getRoutineOccurrence(routine, key = dateKey()) {
     const completion = state.routineCompletions[routineCompletionKey(routine.id, key)] || null;
+    const phases = routinePhases(routine);
     return {
       kind: 'routine',
       ref: `r:${routine.id}:${key}`,
       id: routine.id,
       occurrenceDate: key,
       title: routine.title,
-      phase: routine.phase,
+      phases,
+      phase: phases[0],
       time: routine.time,
       reminderMinutes: routine.reminderMinutes,
       status: completion?.status || 'open',
@@ -730,9 +757,13 @@
     return state.routines.filter(r => routineOccursOn(r, key)).map(r => getRoutineOccurrence(r, key));
   }
 
-  function currentPhaseRoutines() {
-    const phase = phaseFor();
-    return routinesForDate().filter(item => item.phase === phase);
+  // Grouped by every part of the day each routine belongs to (an item tagged Morning +
+  // Night appears in both groups, sharing one completion for the day) — used to render the
+  // whole day as one checkable list instead of gating items behind the current clock time.
+  function todaysRoutineGroups(key = dateKey()) {
+    const occurrences = routinesForDate(key);
+    return PHASES.map(phase => ({ phase, items: occurrences.filter(item => item.phases.includes(phase)) }))
+      .filter(group => group.items.length);
   }
 
   function getItemByRef(ref) {
@@ -948,7 +979,8 @@
     $('#routineId').value = routine?.id || '';
     $('#routineModalTitle').textContent = routine ? 'Edit routine item' : 'Add routine item';
     $('#routineTitle').value = routine?.title || '';
-    $('#routinePhase').value = routine?.phase || phase;
+    const selectedPhases = routine ? routinePhases(routine) : [phase];
+    $$('#routinePhasePicker input').forEach(input => input.checked = selectedPhases.includes(input.value));
     $('#routineTime').value = routine?.time || '';
     $('#routineReminder').value = routine?.reminderMinutes ?? '';
     $('#routineStartDate').value = routine?.startDate || dateKey();
@@ -1128,13 +1160,16 @@
     </div>`;
   }
 
+  // The whole day's routine checklist, all checkable at once regardless of the clock —
+  // grouped by part-of-day purely for readability, not to gate what you can check off.
   function renderCurrentRoutine() {
-    const phase = phaseFor();
-    const copy = PHASE_COPY[phase];
-    $('#routinePhaseEyebrow').textContent = copy.label;
+    const copy = PHASE_COPY[phaseFor()];
+    $('#routinePhaseEyebrow').textContent = "Today's routine";
     $('#routinePhaseTitle').textContent = copy.title;
-    const items = currentPhaseRoutines();
-    $('#routineTaskList').innerHTML = items.length ? items.map(item => taskRow(item, { routine: true, done: item.status === 'done' })).join('') : `<div class="empty-state"><strong>No ${phase} routine items.</strong><span>Add one or leave this part of the day open.</span></div>`;
+    const groups = todaysRoutineGroups();
+    $('#routineTaskList').innerHTML = groups.length
+      ? groups.map(group => `<div class="routine-group-heading">${esc(PHASE_COPY[group.phase].label)}</div>${group.items.map(item => taskRow(item, { routine: true, done: item.status === 'done' })).join('')}`).join('')
+      : `<div class="empty-state"><strong>No routine items yet.</strong><span>Add one — it can belong to more than one part of the day.</span></div>`;
   }
 
   function renderTodayTasks() {
@@ -1149,17 +1184,6 @@
     });
     $('#todayTaskList').innerHTML = tasks.map(task => taskRow({ ...task, ref: `t:${task.id}` })).join('');
     $('#todayEmpty').hidden = tasks.length > 0;
-  }
-
-  function renderLater() {
-    const current = phaseFor();
-    const currentIndex = phaseIndex(current);
-    const laterPhases = PHASES.filter((phase, index) => index > currentIndex || (current === 'night' && false));
-    const groups = laterPhases.map(phase => ({ phase, items: routinesForDate().filter(item => item.phase === phase) })).filter(group => group.items.length);
-    const count = groups.reduce((sum, group) => sum + group.items.length, 0);
-    $('#laterCount').textContent = count ? `${count}` : '';
-    $('#laterTitle').textContent = count ? 'Upcoming routines' : 'Nothing scheduled';
-    $('#laterBody').innerHTML = groups.map(group => `<div class="later-phase"><strong>${esc(group.phase)}</strong><div class="later-items">${group.items.map(item => `<div class="later-item"><span>${esc(item.title)}</span><small>${item.time ? esc(formatTime(parseLocalDateTime(dateKey(), item.time))) : ''}</small></div>`).join('')}</div></div>`).join('') || `<div class="empty-state"><span>No more recurring items today.</span></div>`;
   }
 
   function renderDone() {
@@ -1239,8 +1263,12 @@
   function renderRoutines() {
     const filter = ui.activeRoutineFilter;
     $$('#phaseTabs button').forEach(button => button.classList.toggle('is-active', button.dataset.phaseFilter === filter));
-    const routines = state.routines.filter(r => r.phase === filter).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
-    $('#routineManager').innerHTML = routines.map(r => `<div class="routine-row"><button class="routine-row-main" type="button" data-edit-routine="${esc(r.id)}" style="text-align:left"><strong>${esc(r.title)}</strong><small>${esc(dayNameList(r.days))}${r.time ? ` · ${esc(formatTime(parseLocalDateTime(dateKey(), r.time)))}` : ''}${r.reminderMinutes !== '' ? ` · reminder ${Number(r.reminderMinutes) ? `${r.reminderMinutes} min before` : 'at time'}` : ''}</small></button><div class="routine-row-actions"><button class="toggle ${r.active ? 'is-on' : ''}" type="button" data-toggle-routine="${esc(r.id)}" aria-label="${r.active ? 'Disable' : 'Enable'} ${esc(r.title)}"></button><button class="micro-button" type="button" data-edit-routine="${esc(r.id)}">•••</button></div></div>`).join('') || `<div class="empty-state large"><strong>No ${esc(filter)} routine yet.</strong><span>Add only the things that should genuinely renew.</span></div>`;
+    const routines = state.routines.filter(r => routinePhases(r).includes(filter)).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+    $('#routineManager').innerHTML = routines.map(r => {
+      const phases = routinePhases(r);
+      const phasesLabel = phases.length > 1 ? ` · ${phases.map(p => PHASE_COPY[p].label.replace(' routine', '')).join(' + ')}` : '';
+      return `<div class="routine-row"><button class="routine-row-main" type="button" data-edit-routine="${esc(r.id)}" style="text-align:left"><strong>${esc(r.title)}</strong><small>${esc(dayNameList(r.days))}${r.time ? ` · ${esc(formatTime(parseLocalDateTime(dateKey(), r.time)))}` : ''}${r.reminderMinutes !== '' ? ` · reminder ${Number(r.reminderMinutes) ? `${r.reminderMinutes} min before` : 'at time'}` : ''}${esc(phasesLabel)}</small></button><div class="routine-row-actions"><button class="toggle ${r.active ? 'is-on' : ''}" type="button" data-toggle-routine="${esc(r.id)}" aria-label="${r.active ? 'Disable' : 'Enable'} ${esc(r.title)}"></button><button class="micro-button" type="button" data-edit-routine="${esc(r.id)}">•••</button></div></div>`;
+    }).join('') || `<div class="empty-state large"><strong>No ${esc(filter)} routine yet.</strong><span>Add only the things that should genuinely renew.</span></div>`;
   }
 
   function renderCounts() {
@@ -1258,7 +1286,7 @@
     const refs = priorityRefs();
     $('#priorityPicker').innerHTML = items.map(item => {
       const currentRank = refs.indexOf(item.ref);
-      return `<div class="priority-choice"><div><strong>${esc(item.title)}</strong><small>${item.kind === 'routine' ? `${esc(item.phase)} routine` : item.rolledFrom ? `Rolled since ${esc(formatShortDate(item.rolledFrom))}` : 'One-off task'}</small></div><div class="rank-buttons">${[0,1,2].map(rank => `<button class="rank-button ${currentRank === rank ? 'is-active' : ''}" type="button" data-set-priority="${esc(item.ref)}" data-rank="${rank}">${rank + 1}</button>`).join('')}<button class="rank-button" type="button" data-set-priority="${esc(item.ref)}" data-rank="remove">×</button></div></div>`;
+      return `<div class="priority-choice"><div><strong>${esc(item.title)}</strong><small>${item.kind === 'routine' ? `${esc((item.phases || [item.phase]).join('/'))} routine` : item.rolledFrom ? `Rolled since ${esc(formatShortDate(item.rolledFrom))}` : 'One-off task'}</small></div><div class="rank-buttons">${[0,1,2].map(rank => `<button class="rank-button ${currentRank === rank ? 'is-active' : ''}" type="button" data-set-priority="${esc(item.ref)}" data-rank="${rank}">${rank + 1}</button>`).join('')}<button class="rank-button" type="button" data-set-priority="${esc(item.ref)}" data-rank="remove">×</button></div></div>`;
     }).join('') || `<div class="empty-state large"><strong>No open items to rank.</strong><span>Add a task or routine item first.</span></div>`;
   }
 
@@ -1269,7 +1297,6 @@
     renderNowThree();
     renderCurrentRoutine();
     renderTodayTasks();
-    renderLater();
     renderDone();
     renderCloseout();
     renderWaiting();
@@ -1645,10 +1672,6 @@
     });
     $('#startCloseout').addEventListener('click', () => { renderCloseoutModal(); openModal('closeoutModal'); });
 
-    $('#laterToggle').addEventListener('click', event => {
-      const button = event.currentTarget; const expanded = button.getAttribute('aria-expanded') === 'true';
-      button.setAttribute('aria-expanded', String(!expanded)); $('#laterBody').hidden = expanded;
-    });
     $('#doneToggle').addEventListener('click', event => {
       const button = event.currentTarget; const expanded = button.getAttribute('aria-expanded') === 'true';
       button.setAttribute('aria-expanded', String(!expanded)); $('#doneTaskList').hidden = expanded;
@@ -1691,11 +1714,14 @@
       event.preventDefault();
       const selectedDays = $$('#dayPicker input:checked').map(input => Number(input.value));
       if (!selectedDays.length) { showToast('Choose at least one repeat day.'); return; }
+      const selectedPhases = $$('#routinePhasePicker input:checked').map(input => input.value);
+      if (!selectedPhases.length) { showToast('Choose at least one part of the day.'); return; }
       const id = $('#routineId').value;
       const existing = id ? state.routines.find(r => r.id === id) : null;
       const routine = existing || { id: uid('routine'), active: true, createdAt: new Date().toISOString() };
       routine.title = $('#routineTitle').value.trim();
-      routine.phase = $('#routinePhase').value;
+      routine.phases = selectedPhases;
+      routine.phase = selectedPhases[0];
       routine.time = $('#routineTime').value;
       routine.days = selectedDays;
       routine.reminderMinutes = $('#routineReminder').value;
