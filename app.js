@@ -12,7 +12,16 @@
     night: { label: 'Night routine', title: 'Close the day.' }
   };
 
-  const uid = (prefix = 'id') => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  // Real UUIDs (not the old "prefix_timestamp_random" strings) so every id is a valid
+  // Postgres `uuid` value once it syncs to Supabase. Prefix arg kept for call-site compat.
+  const uid = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
   const pad = n => String(n).padStart(2, '0');
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[char]));
 
@@ -270,9 +279,329 @@
   const $ = selector => document.querySelector(selector);
   const $$ = selector => [...document.querySelectorAll(selector)];
 
+  // ===================== CLOUD SYNC (Supabase) =====================
+  // Source of truth after the one-time migration below is Supabase; localStorage stays
+  // as an offline cache / fast-boot snapshot. Every local mutation already funnels through
+  // saveState() (grep confirms it — every create/update/delete/complete/undo path calls it),
+  // so that's the single hook: it writes localStorage as before, then schedules a debounced
+  // push of the full tasks/routines/routineCompletions/settings state to the cloud. Realtime
+  // subscriptions pull remote changes back down and re-render. Dataset is small and personal,
+  // so "diff by id set, refetch-on-change" is deliberately simple rather than fine-grained —
+  // matches the handoff doc's own guidance (correctness over premature optimization).
+
+  let db = null;
+  let cloudSyncEnabled = false;
+  let cloudReady = false;
+  let applyingRemoteUpdate = false;
+  let cloudPushTimer = null;
+  let remoteRefreshTimer = null;
+  let lastSyncedTaskIds = new Set();
+  let lastSyncedRoutineIds = new Set();
+  let lastSyncedCompletionKeys = new Set();
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  function getDeviceId() {
+    let id;
+    try { id = localStorage.getItem('samehs-checklist-device-id'); } catch { id = null; }
+    if (!id) {
+      id = uid();
+      try { localStorage.setItem('samehs-checklist-device-id', id); } catch {}
+    }
+    return id;
+  }
+
+  // One-time fixup for ids created before uid() switched to real UUIDs (needed because
+  // Supabase's tasks/routines tables use a `uuid` primary key). Rewrites routineCompletions
+  // keys and priorities refs so nothing goes stale. Only runs once, at first cloud migration.
+  function remapLegacyIds(st) {
+    const taskIdMap = {};
+    const routineIdMap = {};
+
+    st.tasks.forEach(task => {
+      if (!UUID_RE.test(task.id)) { const newId = uid(); taskIdMap[task.id] = newId; task.id = newId; }
+    });
+    st.routines.forEach(routine => {
+      if (!UUID_RE.test(routine.id)) { const newId = uid(); routineIdMap[routine.id] = newId; routine.id = newId; }
+    });
+
+    if (Object.keys(routineIdMap).length) {
+      const remapped = {};
+      Object.entries(st.routineCompletions).forEach(([key, value]) => {
+        const idx = key.indexOf('::');
+        const date = key.slice(0, idx);
+        const routineId = key.slice(idx + 2);
+        remapped[`${date}::${routineIdMap[routineId] || routineId}`] = value;
+      });
+      st.routineCompletions = remapped;
+    }
+
+    if (Object.keys(taskIdMap).length || Object.keys(routineIdMap).length) {
+      Object.keys(st.priorities).forEach(dateStr => {
+        st.priorities[dateStr] = (st.priorities[dateStr] || []).map(ref => {
+          if (ref.startsWith('t:') && taskIdMap[ref.slice(2)]) return `t:${taskIdMap[ref.slice(2)]}`;
+          if (ref.startsWith('r:')) {
+            const parts = ref.split(':');
+            if (routineIdMap[parts[1]]) return `r:${routineIdMap[parts[1]]}:${parts[2]}`;
+          }
+          return ref;
+        });
+      });
+    }
+
+    return Object.keys(taskIdMap).length > 0 || Object.keys(routineIdMap).length > 0;
+  }
+
+  function taskToRow(task) {
+    return {
+      id: task.id,
+      title: task.title,
+      notes: task.notes || '',
+      due_date: task.dueDate || null,
+      due_time: task.dueTime || null,
+      phase: task.phase || 'any',
+      status: task.status || 'open',
+      completed_at: task.completedAt || null,
+      rolled_from: task.rolledFrom || null,
+      roll_count: task.rollCount || 0,
+      waiting_for: task.waiting?.person || null,
+      waiting_until: task.waiting?.followUpDate || null,
+      waiting_note: task.waiting?.note || null,
+      waiting_since: task.waiting?.since || null,
+      returned_from_waiting: task.returnedFromWaiting || null,
+      reminder_minutes: task.reminderMinutes === '' || task.reminderMinutes == null ? null : Number(task.reminderMinutes),
+      original_due_date: task.originalDueDate || null,
+      last_rolled_at: task.lastRolledAt || null,
+      source: task.source || null,
+      created_at: task.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      data: task
+    };
+  }
+
+  function rowToTask(row) {
+    if (row.data && typeof row.data === 'object') return { ...row.data, id: row.id };
+    return {
+      id: row.id, title: row.title, notes: row.notes || '', dueDate: row.due_date, dueTime: row.due_time || '',
+      phase: row.phase || 'any', status: row.status || 'open', completedAt: row.completed_at,
+      rolledFrom: row.rolled_from, rollCount: row.roll_count || 0,
+      waiting: row.waiting_for ? { person: row.waiting_for, followUpDate: row.waiting_until, note: row.waiting_note || '', since: row.waiting_since } : null,
+      returnedFromWaiting: row.returned_from_waiting || null,
+      reminderMinutes: row.reminder_minutes == null ? '' : String(row.reminder_minutes),
+      originalDueDate: row.original_due_date, lastRolledAt: row.last_rolled_at, source: row.source, createdAt: row.created_at
+    };
+  }
+
+  function routineToRow(routine) {
+    const days = Array.isArray(routine.days) ? routine.days : [];
+    return {
+      id: routine.id,
+      title: routine.title,
+      notes: routine.notes || null,
+      phase: routine.phase,
+      frequency: days.length >= 7 ? 'daily' : 'weekly',
+      // Stored using JS weekday numbering (Sun=0..Sat=6) to match everything else in this
+      // app. This column is supplementary only — `data` below is authoritative on read.
+      days_of_week: days,
+      due_time: routine.time || null,
+      reminder_minutes: routine.reminderMinutes === '' || routine.reminderMinutes == null ? null : Number(routine.reminderMinutes),
+      active: !!routine.active,
+      start_date: routine.startDate || null,
+      created_at: routine.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      data: routine
+    };
+  }
+
+  function rowToRoutine(row) {
+    if (row.data && typeof row.data === 'object') return { ...row.data, id: row.id };
+    return {
+      id: row.id, title: row.title, phase: row.phase, time: row.due_time || '',
+      days: Array.isArray(row.days_of_week) ? row.days_of_week : [],
+      reminderMinutes: row.reminder_minutes == null ? '' : String(row.reminder_minutes),
+      startDate: row.start_date, active: row.active, createdAt: row.created_at
+    };
+  }
+
+  async function initDataLayer() {
+    try {
+      const response = await fetch('/api/config', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`config endpoint returned ${response.status}`);
+      const config = await response.json();
+      if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Supabase config missing from /api/config');
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Supabase client script did not load');
+      db = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+      cloudSyncEnabled = true;
+    } catch (err) {
+      cloudSyncEnabled = false;
+      console.warn('[cloud sync] disabled —', err?.message || err);
+    }
+  }
+
+  async function fetchCloudSnapshot() {
+    const [tasksRes, routinesRes, completionsRes, settingsRes] = await Promise.all([
+      db.from('tasks').select('*'),
+      db.from('routines').select('*'),
+      db.from('routine_completions').select('*'),
+      db.from('settings').select('*')
+    ]);
+    if (tasksRes.error) throw tasksRes.error;
+    if (routinesRes.error) throw routinesRes.error;
+    if (completionsRes.error) throw completionsRes.error;
+    if (settingsRes.error) throw settingsRes.error;
+    return { tasks: tasksRes.data || [], routines: routinesRes.data || [], completions: completionsRes.data || [], settings: settingsRes.data || [] };
+  }
+
+  function applyCloudSnapshotToState(snapshot) {
+    applyingRemoteUpdate = true;
+    try {
+      state.tasks = snapshot.tasks.map(rowToTask);
+      state.routines = snapshot.routines.map(rowToRoutine);
+
+      const completions = {};
+      snapshot.completions.forEach(row => {
+        completions[routineCompletionKey(row.routine_id, row.completion_date)] =
+          (row.data && typeof row.data === 'object') ? row.data : { status: 'done', completedAt: row.completed_at };
+      });
+      state.routineCompletions = completions;
+
+      const settingsMap = {};
+      snapshot.settings.forEach(row => { settingsMap[row.key] = row.value; });
+      if (settingsMap.app_settings) state.settings = { ...state.settings, ...settingsMap.app_settings };
+      if (settingsMap.priorities) state.priorities = settingsMap.priorities;
+      if (settingsMap.seed_flags) state.seedFlags = { ...state.seedFlags, ...settingsMap.seed_flags };
+      if (settingsMap.activity) state.activity = settingsMap.activity;
+
+      lastSyncedTaskIds = new Set(state.tasks.map(t => t.id));
+      lastSyncedRoutineIds = new Set(state.routines.map(r => r.id));
+      lastSyncedCompletionKeys = new Set(Object.keys(state.routineCompletions));
+
+      saveState();
+      processDayBoundary();
+      renderAll();
+    } finally {
+      applyingRemoteUpdate = false;
+    }
+  }
+
+  async function pushLocalStateToCloud() {
+    if (!cloudSyncEnabled || !db) return;
+    const taskRows = state.tasks.map(taskToRow);
+    const routineRows = state.routines.map(routineToRow);
+    const completionEntries = Object.entries(state.routineCompletions);
+    const completionRows = completionEntries.map(([key, completion]) => {
+      const idx = key.indexOf('::');
+      return {
+        completion_date: key.slice(0, idx),
+        routine_id: key.slice(idx + 2),
+        completed_at: completion.completedAt || new Date().toISOString(),
+        data: completion
+      };
+    });
+
+    const currentTaskIds = new Set(state.tasks.map(t => t.id));
+    const currentRoutineIds = new Set(state.routines.map(r => r.id));
+    const currentCompletionKeys = new Set(completionEntries.map(([key]) => key));
+
+    const deletedTaskIds = [...lastSyncedTaskIds].filter(id => !currentTaskIds.has(id));
+    const deletedRoutineIds = [...lastSyncedRoutineIds].filter(id => !currentRoutineIds.has(id));
+    const deletedCompletionKeys = [...lastSyncedCompletionKeys].filter(key => !currentCompletionKeys.has(key));
+
+    try {
+      if (taskRows.length) { const { error } = await db.from('tasks').upsert(taskRows, { onConflict: 'id' }); if (error) throw error; }
+      if (routineRows.length) { const { error } = await db.from('routines').upsert(routineRows, { onConflict: 'id' }); if (error) throw error; }
+      if (completionRows.length) { const { error } = await db.from('routine_completions').upsert(completionRows, { onConflict: 'routine_id,completion_date' }); if (error) throw error; }
+      if (deletedTaskIds.length) { const { error } = await db.from('tasks').delete().in('id', deletedTaskIds); if (error) throw error; }
+      if (deletedRoutineIds.length) { const { error } = await db.from('routines').delete().in('id', deletedRoutineIds); if (error) throw error; }
+      for (const key of deletedCompletionKeys) {
+        const idx = key.indexOf('::');
+        const { error } = await db.from('routine_completions').delete().eq('routine_id', key.slice(idx + 2)).eq('completion_date', key.slice(0, idx));
+        if (error) throw error;
+      }
+
+      const { error: settingsError } = await db.from('settings').upsert([
+        { key: 'app_settings', value: state.settings, updated_at: new Date().toISOString() },
+        { key: 'priorities', value: state.priorities, updated_at: new Date().toISOString() },
+        { key: 'seed_flags', value: state.seedFlags, updated_at: new Date().toISOString() },
+        { key: 'activity', value: state.activity.slice(0, 300), updated_at: new Date().toISOString() }
+      ], { onConflict: 'key' });
+      if (settingsError) throw settingsError;
+
+      lastSyncedTaskIds = currentTaskIds;
+      lastSyncedRoutineIds = currentRoutineIds;
+      lastSyncedCompletionKeys = currentCompletionKeys;
+    } catch (err) {
+      console.warn('[cloud sync] push failed:', err?.message || err);
+    }
+  }
+
+  function scheduleCloudPush() {
+    if (!cloudSyncEnabled || applyingRemoteUpdate) return;
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = setTimeout(pushLocalStateToCloud, 700);
+  }
+
+  async function loadInitialData() {
+    if (!cloudSyncEnabled || !db) return;
+    try {
+      const snapshot = await fetchCloudSnapshot();
+      const migrationRow = snapshot.settings.find(s => s.key === 'migration_v1');
+      const cloudHasData = snapshot.tasks.length > 0 || snapshot.routines.length > 0;
+
+      if (migrationRow || cloudHasData) {
+        // Cloud wins — it's the shared source of truth once any device has migrated.
+        applyCloudSnapshotToState(snapshot);
+      } else {
+        // Nothing in the cloud yet: this device's local state becomes the seed.
+        remapLegacyIds(state);
+        lastSyncedTaskIds = new Set();
+        lastSyncedRoutineIds = new Set();
+        lastSyncedCompletionKeys = new Set();
+        await pushLocalStateToCloud();
+        const { error } = await db.from('settings').upsert(
+          { key: 'migration_v1', value: { completedAt: new Date().toISOString(), sourceCount: state.tasks.length + state.routines.length, deviceId: getDeviceId() } },
+          { onConflict: 'key' }
+        );
+        if (error) throw error;
+        saveState();
+      }
+      cloudReady = true;
+    } catch (err) {
+      console.warn('[cloud sync] initial load failed, staying local-only for this session:', err?.message || err);
+    }
+  }
+
+  function handleRemoteChange() {
+    if (applyingRemoteUpdate) return;
+    clearTimeout(remoteRefreshTimer);
+    remoteRefreshTimer = setTimeout(async () => {
+      try { applyCloudSnapshotToState(await fetchCloudSnapshot()); }
+      catch (err) { console.warn('[cloud sync] realtime refresh failed:', err?.message || err); }
+    }, 400);
+  }
+
+  function subscribeRealtime() {
+    if (!cloudSyncEnabled || !db) return;
+    db.channel('samehs-checklist-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, handleRemoteChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'routines' }, handleRemoteChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'routine_completions' }, handleRemoteChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, handleRemoteChange)
+      .subscribe();
+  }
+
+  async function initCloudSync() {
+    await initDataLayer();
+    if (!cloudSyncEnabled) return;
+    await loadInitialData();
+    subscribeRealtime();
+  }
+  // =================== END CLOUD SYNC (Supabase) ====================
+
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     syncRemindersToExtension();
+    scheduleCloudPush();
   }
 
   function addActivity(type, title, metadata = {}, at = new Date()) {
@@ -1396,6 +1725,9 @@
     checkInAppReminders();
     ui.reminderTimer = setInterval(() => { renderClock(); processDayBoundary(); checkInAppReminders(); }, 30000);
     setInterval(() => { if (dateKey() !== state.lastProcessedDate) renderAll(); }, 60000);
+    // Boots the app instantly from the local snapshot above, then connects to Supabase in
+    // the background (not awaited) so cross-device sync comes online without blocking render.
+    initCloudSync();
   }
 
   init();
